@@ -8,18 +8,30 @@ describe('instance', function () {
   });
 
   it('should have the same methods as default instance', function () {
-    var instance = axios.create();
+    const instance = axios.create();
 
-    for (var prop in axios) {
+    for (const prop in axios) {
       if ([
         'Axios',
+        'AxiosError',
         'create',
         'Cancel',
+        'CanceledError',
         'CancelToken',
         'isCancel',
         'all',
         'spread',
-        'default'].indexOf(prop) > -1) {
+        'getUri',
+        'isAxiosError',
+        'mergeConfig',
+        'getAdapter',
+        'VERSION',
+        'default',
+        'toFormData',
+        'formToJSON',
+        'AxiosHeaders',
+        'HttpStatusCode'
+      ].indexOf(prop) > -1) {
         continue;
       }
       expect(typeof instance[prop]).toBe(typeof axios[prop]);
@@ -27,7 +39,20 @@ describe('instance', function () {
   });
 
   it('should make an http request without verb helper', function (done) {
-    var instance = axios.create();
+    const instance = axios.create();
+
+    instance('/foo');
+
+    getAjaxRequest().then(function (request) {
+      expect(request.url).toBe('/foo');
+      done();
+    });
+  });
+
+  it('should make an http request with url instead of baseURL', function (done) {
+    const instance = axios.create({
+      url: 'https://api.example.com'
+    });
 
     instance('/foo');
 
@@ -38,7 +63,7 @@ describe('instance', function () {
   });
 
   it('should make an http request', function (done) {
-    var instance = axios.create();
+    const instance = axios.create();
 
     instance.get('/foo');
 
@@ -49,7 +74,7 @@ describe('instance', function () {
   });
 
   it('should use instance options', function (done) {
-    var instance = axios.create({ timeout: 1000 });
+    const instance = axios.create({ timeout: 1000 });
 
     instance.get('/foo');
 
@@ -60,7 +85,7 @@ describe('instance', function () {
   });
 
   it('should have defaults.headers', function () {
-    var instance = axios.create({
+    const instance = axios.create({
       baseURL: 'https://api.example.com'
     });
 
@@ -74,13 +99,13 @@ describe('instance', function () {
       return config;
     });
 
-    var instance = axios.create();
+    const instance = axios.create();
     instance.interceptors.request.use(function (config) {
       config.bar = true;
       return config;
     });
 
-    var response;
+    let response;
     instance.get('/foo').then(function (res) {
       response = res;
     });
@@ -96,5 +121,41 @@ describe('instance', function () {
         done();
       }, 100);
     });
+  });
+
+  it('should have getUri on the instance', function() {
+    const instance = axios.create({
+      baseURL: 'https://api.example.com'
+    });
+    const options = {
+      url: 'foo/bar',
+      params: {
+        name: 'axios'
+      }
+    };
+    expect(instance.getUri(options)).toBe('https://api.example.com/foo/bar?name=axios');
+  });
+
+  it('should correctly build url without baseURL', function () {
+    const instance = axios.create();
+    const options = {
+      url: 'foo/bar?foo=bar',
+      params: {
+        name: 'axios'
+      }
+    };
+    expect(instance.getUri(options)).toBe('foo/bar?foo=bar&name=axios');
+  });
+
+  it('should correctly discard url hash mark', function () {
+    const instance = axios.create();
+    const options = {
+      baseURL: 'https://api.example.com',
+      url: 'foo/bar?foo=bar#hash',
+      params: {
+        name: 'axios'
+      }
+    };
+    expect(instance.getUri(options)).toBe('https://api.example.com/foo/bar?foo=bar&name=axios');
   });
 });
